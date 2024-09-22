@@ -14,11 +14,27 @@ pnpm dev
 bun dev
 ```
 
+
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+
+ ```Javascript
+ // User input from a front-end form or date picker (Example: "2024-10-20" and "10:30")
+const dateInput = "2024-10-20"; // Date input from the user
+const timeInput = "10:30"; // Time input from the user (24-hour format)
+
+// Combine date and time into one string
+const combinedDateTime = `${dateInput} ${timeInput}`;
+
+// Convert the combined date-time string to a Unix timestamp
+const scheduledTimestamp = Math.floor(new Date(combinedDateTime).getTime() / 1000);
+
+console.log("Scheduled Timestamp (Unix format):", scheduledTimestamp);
+```
 
 ## Learn More
 
