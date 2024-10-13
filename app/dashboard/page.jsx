@@ -236,7 +236,7 @@ export default function Dashboard() {
                 />
                 <input
                   type="number"
-                  placeholder="Amount (ETH)"
+                  placeholder="Amount (ETH) (>= 1.0 ETH)"
                   className="border border-gray-300 rounded-md p-2 mb-4 w-full text-black"
                   value={sentAmount}
                   onChange={(e) => setSentAmount(e.target.value)}
