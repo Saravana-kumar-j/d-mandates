@@ -1,84 +1,67 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import About from './About';
+import SignIn from './SignIn';
+import Footer from '@/components/Footer';
 
-export default function Home() {
-  const [address, setAddress] = useState('');
-  const [addressCache, setAddressCache] = useState('');
-  const router = useRouter();
-
-  const connectToMetamask = async () => {
-    if (window.ethereum) {
-      try {
-        const [selectedAddress] = await window.ethereum.request({
-          method: 'eth_requestAccounts',
-        });
-
-        if (selectedAddress) {
-          setAddress(selectedAddress);
-          localStorage.setItem('userAddress', selectedAddress); // Store address in localStorage
-          toast.success('MetaMask Connected Successfully');
-        } else {
-          toast.error('No accounts found');
-        }
-      } catch (err) {
-        toast.error(`Error connecting to MetaMask: ${err.message}`);
-      }
-    } else {
-      toast.error('MetaMask is not Found');
-    }
-  };
-
-  const handleSubmit = () => {
-    if (address) {
-      router.push('/dashboard');
-    } else {
-      toast.error('MetaMask not connected');
-    }
-  };
-
-  // Automatically retrieve address from local storage if it exists
-  useEffect(() => {
-    const storedAddress = localStorage.getItem('userAddress');
-    if (storedAddress) {
-      setAddressCache(storedAddress);
-    }
-  }, []);
+const App = () => {
+  const [showAbout, setShowAbout] = useState(true);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
-      <main className="bg-white max-w-md mx-auto p-8 rounded-md shadow-2xl">
-        <h1 className="text-4xl font-bold text-center text-gray-900 mb-6">D-Mandates</h1>
-        <p className="text-center text-gray-600 mb-6">Connect your MetaMask account to get started.</p>
+      <div className="window max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+        {/* Navigation Bar */}
+        <nav className="mb-6">
+          <ul className="flex justify-around">
+            <li>
+              <button
+                onClick={() => setShowAbout(true)}
+                className={`text-lg font-semibold transition duration-300 ${showAbout ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+              >
+                About
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setShowAbout(false)}
+                className={`text-lg font-semibold transition duration-300 ${!showAbout ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+              >
+                Sign In
+              </button>
+            </li>
+          </ul>
+        </nav>
 
-        {/* Connect MetaMask Button */}
-        <button
-          onClick={connectToMetamask}
-          className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg block w-full text-center transition transform hover:scale-105 duration-300 ease-in-out mb-4"
-        >
-          Connect to MetaMask Account
-        </button>
-
-        {/* Display connected address */}
-        {address && (
-          <p className="text-center text-gray-800 font-semibold mb-6">
-            Connected Address: <span className="text-blue-600">{address}</span>
-          </p>
-        )}
-
-        {/* Navigate to Dashboard */}
-        <button
-          onClick={handleSubmit}
-          className="bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg block w-full text-center transition transform hover:scale-105 duration-300 ease-in-out"
-        >
-          Get In
-        </button>
-
-        {/* Toast Notification */}
-        <Toaster position="bottom-left" />
-      </main>
+        {/* Animated Content */}
+        <AnimatePresence mode="wait">
+          {showAbout ? (
+            <motion.div
+              key="About"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <About />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="signIn"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SignIn />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <Footer />
     </div>
   );
-}
+};
+
+export default App;

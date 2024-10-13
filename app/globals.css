@@ -1,3 +1,4 @@
+/* globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +6,25 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --dark-red-600: #991b1b;
+  --dark-red-700: #7f1d1d;
+  --dark-red-800: #6b1f1f;
+  --gray-bg-light: #f9fafb;
+  --gray-bg-dark: #1f2937;
+  --text-color-light: #111827;
+  --text-color-dark: #d1d5db;
+}
+
+/* Apply the Poppins font globally */
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif; /* Use Poppins as the default font */
+}
+
+.dark-mode {
+  background-color: var(--gray-bg-dark);
+  color: var(--text-color-dark);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,14 +34,24 @@
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* styles.css */
+.window {
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.underline {
+  position: absolute;
+  height: 3px;
+  background: blue; /* Customize the underline color */
+  bottom: -5px; /* Adjust the position as necessary */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%; /* Adjust the width of the underline */
 }

@@ -1,4 +1,4 @@
-export const contractADDRESS = "0x598Bc2396fc1D197a3425690407077933C7a7399" 
+export const contractADDRESS = "0x362698c1EceeF2a48E44d9967Fb359437631De25" 
 export const contractAbi = [
 	{
 		"inputs": [],
@@ -72,7 +72,7 @@ export const contractAbi = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "_amount",
+				"name": "_amountEther",
 				"type": "uint256"
 			},
 			{
@@ -99,6 +99,51 @@ export const contractAbi = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getReceiverPayments",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "address",
+						"name": "sender",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "receiver",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "scheduledTime",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "note",
+						"type": "string"
+					},
+					{
+						"internalType": "bool",
+						"name": "claimed",
+						"type": "bool"
+					}
+				],
+				"internalType": "struct ScheduledPayments.Payment[]",
+				"name": "",
+				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",

@@ -1,32 +1,24 @@
-'use client';
-import { useEffect, useState } from 'react';
+"use client";
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { useRouter } from 'next/navigation'; // Import useRouter for navigation
 import toast, { Toaster } from 'react-hot-toast';
-import * as Constants from "./../../Utils/config";
-// import { useRouter } from 'next/router';
-import Link from 'next/link';
-
+import * as Constants from './../../Utils/config';
+import Navbar from '../../components/Navbar'; // Import the Navbar component
+import Footer from '@/components/Footer';
 
 export default function Dashboard() {
   const [addressCache, setAddressCache] = useState('');
   const [balance, setBalance] = useState('0');
-  const [selectedNetwork, setSelectedNetwork] = useState('sepolia');
-  const [sentAmount, setSentAmount] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [receiverAddress, setReceiverAddress] = useState('');
-  const [dateTime, setDateTime] = useState('');
-  const [contract, setContract] = useState(null);
-  const [timestamp, setTimestamp] = useState('');
-  const [note, setNote] = useState('');
-  const [userPayments, setUserPayments] = useState([]);
+  const [contract, setContract] = useState(null); // State for the contract
+  const [receiverAddress, setReceiverAddress] = useState(''); // New state for receiver address
+  const [sentAmount, setSentAmount] = useState(''); // New state for sent amount
+  const [note, setNote] = useState(''); // New state for note
+  const [dateTime, setDateTime] = useState(''); // New state for datetime input
+  const router = useRouter(); // Initialize the useRouter hook
 
-
-  const networkOptions = [
-    { value: 'sepolia', label: 'Sepolia' },
-    { value: 'rinkeby', label: 'Rinkeby' },
-    { value: 'mainnet', label: 'Mainnet' }
-  ];
-
+  // Load address from local storage
   useEffect(() => {
     const storedAddress = localStorage.getItem('userAddress');
     if (storedAddress) {
@@ -34,103 +26,114 @@ export default function Dashboard() {
     } else {
       toast.error('No MetaMask address found. Please connect again.');
     }
-  }, []);
+  }, []); // <-- End of first useEffect
 
+  // Fetch balance of the user when the address is loaded
+  useEffect(() => {
+    if (addressCache) {
+      fetchBalance(addressCache); // Fetch balance immediately if address is found
+    }
+  }, [addressCache]); // <-- Add addressCache as a dependency
+
+  // Initialize ethers and create contract instance
   useEffect(() => {
     const initEthers = async () => {
-      if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(
-          Constants.contractADDRESS,
-          Constants.contractAbi,
-          provider.getSigner(),
-        );
-        setContract(contract);
-      } else {
-        console.error("Ethereum provider not found");
+      try {
+        if (window.ethereum) {
+          // Create a new provider using ethers.js
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          
+          // Request access to the user's Ethereum account
+          await provider.send("eth_requestAccounts", []);
+          
+          // Create a contract instance using the ABI and contract address
+          const contractInstance = new ethers.Contract(
+            Constants.contractADDRESS, // Contract address
+            Constants.contractAbi,     // ABI
+            provider.getSigner()       // Signer to interact with the contract
+          );
+          
+          // Set the contract in the state
+          setContract(contractInstance);
+        } else {
+          console.error('Ethereum provider not found. Please install MetaMask!');
+        }
+      } catch (error) {
+        console.error('Error initializing ethers:', error);
       }
     };
+  
+    // Call initEthers when the component mounts
     initEthers();
-  }, []);
-
-  useEffect(() => {
-    if (addressCache && contract) {
-      fetchUserPayments();
-      fetchBalance(addressCache, selectedNetwork);
-    }
-  }, [addressCache, contract, selectedNetwork]);
-
-  const fetchBalance = async (address, network) => {
-    const provider = ethers.getDefaultProvider(network);
+  }, []); // <-- Second useEffect to handle ethers initialization
+  
+  // Fetch balance of the user
+  const fetchBalance = async (address) => {
+    const provider = ethers.getDefaultProvider('sepolia');
     try {
       const balance = await provider.getBalance(address);
       setBalance(ethers.utils.formatEther(balance));
-      toast.success("Balance Updated");
+      toast.success('Balance Updated');
     } catch (error) {
-      console.error("Error fetching balance:", error);
-      toast.error("Error fetching balance.");
+      console.error('Error fetching balance:', error);
+      toast.error('Error fetching balance.');
     }
-  };
-
-  const handleNetworkChange = (event) => {
-    setSelectedNetwork(event.target.value);
-    fetchBalance(addressCache, event.target.value);
   };
 
   const refreshBalance = () => {
-    fetchBalance(addressCache, selectedNetwork);
+    fetchBalance(addressCache);
   };
 
   const schedulePayment = async (newTimestamp) => {
-    if (!contract || !addressCache || !receiverAddress || !newTimestamp || !sentAmount) {
-        toast.error("Fields cannot be empty.");
-        return;
+    // Ensure all necessary fields are filled
+    if (!contract || !receiverAddress || !sentAmount) {
+      toast.error('Fields cannot be empty.');
+      return;
     }
-    
+  
+    // Validate the receiver address
     if (!ethers.utils.isAddress(receiverAddress)) {
-        toast.error("Invalid receiver address.");
-        return;
+      toast.error('Invalid receiver address.');
+      return;
     }
-
+  
     try {
-        const parsedAmount = ethers.utils.parseEther(sentAmount);
-        const balance = await contract.provider.getBalance(addressCache);
-        const gasPrice = await contract.provider.getGasPrice();
-        let gasLimit;
-
-        try {
-            gasLimit = await contract.estimateGas.schedulePayment(receiverAddress, parsedAmount, note, newTimestamp);
-        } catch (error) {
-            console.error("Gas estimation failed, using fallback limit:", error);
-            gasLimit = ethers.utils.hexlify(200000); // Fallback
+      console.log('Receiver address:', receiverAddress);
+      console.log('Amount to send (Ether):', sentAmount);
+      console.log('Note:', note);
+      console.log('New Timestamp:', newTimestamp);
+  
+      // Show a loading toast while the transaction is being processed
+      const txPromise = contract.schedulePayment(
+        receiverAddress,
+        sentAmount,
+        note,
+        newTimestamp,
+        {
+          value: ethers.utils.parseEther(sentAmount), // Send the amount as Ether directly
         }
-
-        const totalCost = parsedAmount.add(gasPrice.mul(gasLimit));
-
-        if (balance.lt(totalCost)) {
-            toast.error("Insufficient funds for the transaction.");
-            return;
+      );
+  
+      // Use toast.promise to handle loading, success, and error states
+      await toast.promise(
+        txPromise.then((tx) => tx.wait()), // Wait for the transaction to be mined
+        {
+          loading: 'Scheduling payment...',
+          success: 'Scheduled payment successfully!',
+          error: (err) => err.reason || 'Failed to schedule payment. Please try again.',
         }
-
-        const tx = await contract.schedulePayment(receiverAddress, parsedAmount, note, newTimestamp, {
-            value: parsedAmount,
-            gasLimit: gasLimit
-        });
-
-        await tx.wait();
-        toast.success("Scheduled payment successfully.");
-        resetPaymentFields();
-        fetchUserPayments();
+      );
+  
+      resetPaymentFields();
+      fetchUserPayments(); // Fetch updated payment history
     } catch (error) {
-        console.error("Error scheduling payment:", error);
-        toast.error(error.reason || "Failed to schedule payment. Please try again.");
+      console.error('Error scheduling payment:', error);
+      // Error toast already handled in toast.promise
     }
-};
-
-
-
+  };
+  
+  // Reset modal form fields
   const resetPaymentFields = () => {
-    setIsModalOpen(false);
     setReceiverAddress('');
     setSentAmount('');
     setNote('');
@@ -138,208 +141,142 @@ export default function Dashboard() {
     setIsModalOpen(false);
   };
 
-  const fetchUserPayments = async () => {
-    if (!contract || !addressCache) return;
-    try {
-      const payments = await contract.getSenderPayments(addressCache);
-      setUserPayments(payments);
-    } catch (error) {
-      toast.error("Error fetching payments.");
-      console.error("Error fetching payments:", error);
-    }
-  };
-
+  // Handle form submission for scheduling payment
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Show loading toast
-    const loadingToast = toast.loading("Scheduling payment...");
-
-    try {
-        const combinedDateTime = new Date(dateTime).toISOString();
-        const newTimestamp = Math.floor(new Date(combinedDateTime).getTime() / 1000);
-        setTimestamp(newTimestamp);
-
-        await schedulePayment(newTimestamp); // Pass the new timestamp to the function
-
-        // Show success toast
-        toast.success("Payment scheduled successfully!", { id: loadingToast });
-    } catch (error) {
-        console.error("Error scheduling payment:", error);
-        toast.error("Failed to schedule payment.", { id: loadingToast });
-    } finally {
-        resetPaymentFields();
-    }
-};
-
-
-  const claimAmount = async () => {
-    if (!contract) {
-      toast.error("Contract not initialized");
-      return;
-    }
-  
-    try {
-      toast.loading("Claiming amount...");
-  
-      const tx = await contract.claimPayment(); // Trigger the claimPayment function on the contract
-      await tx.wait(); // Wait for the transaction to be confirmed
-  
-      toast.dismiss();
-      toast.success("Amount claimed successfully!");
-  
-      // Optional: Refresh balance and payments list
-      fetchBalance(addressCache, selectedNetwork);
-      fetchUserPayments();
-    } catch (error) {
-      toast.dismiss();
-      console.error("Error claiming amount:", error);
-      toast.error(error.reason || "Failed to claim amount. Please try again.");
-    }
+    const newTimestamp = Math.floor(new Date(dateTime).getTime() / 1000); // Convert datetime to timestamp
+    await schedulePayment(newTimestamp); // Call the scheduling function
   };
-  
+
+  const handleHistory = async () => {
+    router.push('/payments');
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
-      <main className="w-full max-w-3xl mx-auto p-8 bg-white shadow-2xl rounded-md relative">
-        {/* Home Button */}
-        <Link href="/" className="absolute top-4 left-4 bg-gray-800 text-white font-bold py-2 px-4 rounded-md transition duration-200 hover:bg-gray-700">
-          Home
-        </Link>
+    <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 flex flex-col">
+      <Navbar />
+      <main className="flex-grow p-8">
+        {/* Centered Dashboard Heading */}
+        <h1 className="text-5xl font-bold text-white mb-8 text-center">DashBoard</h1>
 
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-900">Dashboard</h1>
-        <p className="text-lg text-gray-600 mb-10 text-center">
-          Connected MetaMask Address: <span className="font-semibold text-gray-800">{addressCache}</span>
-        </p>
-        <p className="text-center text-gray-800 font-semibold mb-6">Balance: <span className="text-green-600">{balance} ETH</span></p>
-
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Scheduled Payments</h2>
-          <div style={{ maxHeight: "40vh", overflowY: "auto" }}>
-            <ul className="list-group">
-              {userPayments.map((payment, index) => (
-                <li key={index} className="list-group-item bg-gray-100 rounded-md shadow-md p-4 mb-2">
-                  <small className="block text-gray-700">Sender: {payment.sender}</small>
-                  <small className="block text-gray-700">Receiver: {payment.receiver}</small>
-                  <p className="text-gray-800">{payment.note}</p>
-                  <small className="text-gray-500">Amount: {ethers.utils.formatEther(payment.amount)} ETH</small>
-                  <small className="block text-gray-500">Scheduled Time: {new Date(payment.scheduledTime * 1000).toLocaleString()}</small>
-                  <small className={`block ${payment.claimed ? 'text-green-600' : 'text-red-600'}`}>
-                    Status: {payment.claimed ? 'Claimed' : 'Pending'}
-                  </small>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Profile Section */}
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl mx-auto mb-8">
+          <h2 className="text-3xl font-semibold text-gray-900 mb-4">Profile</h2>
+          <p className="text-gray-700 mb-4">
+            Connected MetaMask Address: <span className="text-red-800">{addressCache}</span>
+          </p>
+          <p className="text-gray-700 flex items-center">
+            Balance: <span className="ml-2 text-green-800 font-semibold">{balance} ETH</span>
+            <button
+              onClick={refreshBalance}
+              className="ml-4 text-gray-700 hover:text-gray-500 transition duration-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                <path d="M13.5 2c-5.621 0-10.211 4.443-10.475 10h-3.025l5 6.625 5-6.625h-2.975c.257-3.351 3.06-6 6.475-6 3.584 0 6.5 2.916 6.5 6.5s-2.916 6.5-6.5 6.5c-1.863 0-3.542-.793-4.728-2.053l-2.427 3.216c1.877 1.754 4.389 2.837 7.155 2.837 5.79 0 10.5-4.71 10.5-10.5s-4.71-10.5-10.5-10.5z" />
+              </svg>
+            </button>
+          </p>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">Select Network:</label>
-          <select 
-            value={selectedNetwork} 
-            onChange={handleNetworkChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200 ease-in-out text-black"
-          >
-            {networkOptions.map(network => (
-              <option key={network.value} value={network.value}>{network.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex justify-center space-x-6 mb-6">
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out"
-            onClick={refreshBalance}
-          >
-            Refresh Balance
-          </button>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out"
-            onClick={claimAmount}
-          >
-            Claim Amount
-          </button>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Schedule Payment
-          </button>
-        </div>
-
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative transform transition-all duration-300 scale-100">
+        {/* Services Section */}
+        <section className="mt-12">
+          <h2 className="text-3xl font-semibold text-center text-white mb-8">Our Services</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Card for Schedule Payment */}
+            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Schedule Payments</h3>
+              <p className="text-gray-700 mb-4">
+                Easily schedule payments for future dates with our secure platform. Perfect for recurring payments and transfers.
+              </p>
               <button
-                onClick={resetPaymentFields}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-xl"
+                onClick={() => setIsModalOpen(true)}
+                className="text-white bg-black hover:bg-gray-600 px-4 py-2 rounded-md transition duration-200"
               >
-                &times;
+                Schedule Payment
               </button>
-              <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">Schedule Payment</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Receiver Address:</label>
-                  <input
-                    type="text"
-                    placeholder="Receiver address"
-                    value={receiverAddress}
-                    onChange={(e) => setReceiverAddress(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200 ease-in-out text-black"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Amount to be sent:</label>
-                  <input
-                    type="text"
-                    placeholder="Amount"
-                    value={sentAmount}
-                    onChange={(e) => setSentAmount(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200 ease-in-out text-black"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Add a Note:</label>
-                  <input
-                    type="text"
-                    placeholder="Enter a Note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200 ease-in-out text-black"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Choose Date & Time:</label>
-                  <input
-                    type="datetime-local"
-                    value={dateTime}
-                    onChange={(e) => setDateTime(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200 ease-in-out text-black"
-                    required
-                  />
-                </div>
-                <div className="text-center mt-6">
+            </div>
+
+            {/* Card for Payment History */}
+            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Payment History</h3>
+              <p className="text-gray-700 mb-4">
+                View your transaction history and keep track of all scheduled and completed payments with ease.
+              </p>
+              <button onClick={handleHistory} className="text-white bg-black hover:bg-gray-600 px-4 py-2 rounded-md transition duration-200">
+                View History
+              </button>
+            </div>
+
+            {/* Card for Wallet Management */}
+            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Manage Wallet</h3>
+              <p className="text-gray-700 mb-4">
+                Access advanced wallet management tools to track balances, transfer funds, and much more.
+              </p>
+              <button className="text-white bg-black hover:bg-gray-600 px-4 py-2 rounded-md transition duration-200">
+                Manage Wallet
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Modal for Scheduling Payment */}
+        {isModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-md shadow-lg max-w-md w-full mx-auto">
+              <h2 className="text-xl font-bold mb-4 text-black">Schedule Payment</h2>
+              <form onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  placeholder="Receiver Address"
+                  className="border border-gray-300 rounded-md p-2 mb-4 w-full text-black"
+                  value={receiverAddress}
+                  onChange={(e) => setReceiverAddress(e.target.value)}
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Amount (ETH)"
+                  className="border border-gray-300 rounded-md p-2 mb-4 w-full text-black"
+                  value={sentAmount}
+                  onChange={(e) => setSentAmount(e.target.value)}
+                  required
+                />
+                <textarea
+                  placeholder="Note"
+                  className="border border-gray-300 rounded-md p-2 mb-4 w-full text-black"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+                <input
+                  type="datetime-local"
+                  className="border border-gray-300 rounded-md p-2 mb-4 w-full text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={dateTime}
+                  onChange={(e) => setDateTime(e.target.value)}
+                  required
+                />
+                <div className="flex justify-between">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition transform hover:scale-105 ease-in-out duration-300 w-full"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200"
                   >
-                    Submit
+                    Schedule
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                  >
+                    Cancel
                   </button>
                 </div>
               </form>
             </div>
           </div>
         )}
-
-        <Toaster position="bottom-left" />
       </main>
-
-      <Link href="/scheduledPayments" className="absolute bottom-4 right-4 bg-gray-800 text-white font-bold py-2 px-4 rounded-md transition duration-200 hover:bg-gray-700">
-      Scheduled Payments
-    </Link>
+      <Toaster position="top-center" />
+      <Footer />
     </div>
   );
 }
