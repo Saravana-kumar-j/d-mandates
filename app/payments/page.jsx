@@ -46,7 +46,7 @@ export default function PaymentsHistory() {
       fetchUserPayments();
       fetchReceiverPayments();
     }
-  }, [addressCache, contract]);
+  }, [addressCache, contract]); // Including addressCache and contract as dependencies
 
   // Fetch user payments from contract
   const fetchUserPayments = async () => {
@@ -111,91 +111,90 @@ export default function PaymentsHistory() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-blue-500 to-purple-600">
-  <Navbar />
-  <main className="flex-grow p-8">
-    <h1 className="text-5xl font-bold text-white mb-8 text-center">Payments & History</h1>
-    
-    {/* Claim Amount Section */}
-    <section className="mb-8">
-      <div className="bg-white p-6 rounded-lg max-w-4xl mx-auto shadow-lg">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-4">Claim Amount</h2>
-        <p className="text-xl font-bold text-green-600 mb-4">
-          Amount to be claimed: {claimableAmount.toFixed(4)} ETH
-        </p>
-        <button
-          onClick={claimAmount}
-          className={`bg-blue-500 text-white px-4 py-2 rounded-md transition-colors duration-200 ${
-            claimableAmount <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
-          }`}
-          disabled={claimableAmount <= 0} // Disable button if no claimable amount
-        >
-          Claim Payment
-        </button>
-      </div>
-    </section>
+      <Navbar />
+      <main className="flex-grow p-8">
+        <h1 className="text-5xl font-bold text-white mb-8 text-center">Payments & History</h1>
+        
+        {/* Claim Amount Section */}
+        <section className="mb-8">
+          <div className="bg-white p-6 rounded-lg max-w-4xl mx-auto shadow-lg">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-4">Claim Amount</h2>
+            <p className="text-xl font-bold text-green-600 mb-4">
+              Amount to be claimed: {claimableAmount.toFixed(4)} ETH
+            </p>
+            <button
+              onClick={claimAmount}
+              className={`bg-blue-500 text-white px-4 py-2 rounded-md transition-colors duration-200 ${
+                claimableAmount <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
+              }`}
+              disabled={claimableAmount <= 0} // Disable button if no claimable amount
+            >
+              Claim Payment
+            </button>
+          </div>
+        </section>
 
-    {/* Transaction History Section */}
-    <section className="mb-8">
-      <h2 className="text-3xl font-semibold text-gray-100 mb-4 text-center">Transaction History</h2>
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <div style={{ maxHeight: '40vh', overflowY: 'auto' }} className="rounded-md">
-          <ul className="space-y-2">
-            {userPayments.length === 0 ? (
-              <li className="bg-gray-100 rounded-md shadow-md p-4">
-                <p className="text-gray-600 text-center">No scheduled payments found.</p>
-              </li>
-            ) : (
-              userPayments.map((payment, index) => (
-                <li key={index} className="bg-gray-100 rounded-md shadow-md p-4">
-                  <small className="block text-gray-700 font-bold">Sender: {payment.sender}</small>
-                  <small className="block text-gray-700 font-bold">Receiver: {payment.receiver}</small>
-                  <small className="block text-gray-700">Note: {payment.note}</small>
-                  <small className="block text-gray-500">Amount: {ethers.utils.formatEther(payment.amount)} ETH</small>
-                  <small className="block text-gray-500">Scheduled Time: {new Date(payment.scheduledTime * 1000).toLocaleString()}</small>
-                  <small className={`block ${payment.claimed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}`}>
-                    Status: {payment.claimed ? 'Claimed' : 'Pending'}
-                  </small>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </div>
-    </section>
+        {/* Transaction History Section */}
+        <section className="mb-8">
+          <h2 className="text-3xl font-semibold text-gray-100 mb-4 text-center">Transaction History</h2>
+          <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+            <div style={{ maxHeight: '40vh', overflowY: 'auto' }} className="rounded-md">
+              <ul className="space-y-2">
+                {userPayments.length === 0 ? (
+                  <li className="bg-gray-100 rounded-md shadow-md p-4">
+                    <p className="text-gray-600 text-center">No scheduled payments found.</p>
+                  </li>
+                ) : (
+                  userPayments.map((payment, index) => (
+                    <li key={index} className="bg-gray-100 rounded-md shadow-md p-4">
+                      <small className="block text-gray-700 font-bold">Sender: {payment.sender}</small>
+                      <small className="block text-gray-700 font-bold">Receiver: {payment.receiver}</small>
+                      <small className="block text-gray-700">Note: {payment.note}</small>
+                      <small className="block text-gray-500">Amount: {ethers.utils.formatEther(payment.amount)} ETH</small>
+                      <small className="block text-gray-500">Scheduled Time: {new Date(payment.scheduledTime * 1000).toLocaleString()}</small>
+                      <small className={`block ${payment.claimed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}`}>
+                        Status: {payment.claimed ? 'Claimed' : 'Pending'}
+                      </small>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        </section>
 
-    {/* Claimable History Section */}
-    <section className="mb-8">
-      <h2 className="text-3xl font-semibold text-gray-100 mb-4 text-center">Claimable History</h2>
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <div style={{ maxHeight: '40vh', overflowY: 'auto' }} className="rounded-md">
-          <ul className="space-y-2">
-            {receiverPayments.length === 0 ? (
-              <li className="bg-gray-100 rounded-md shadow-md p-4">
-                <p className="text-gray-600 text-center">No scheduled payments found.</p>
-              </li>
-            ) : (
-              receiverPayments.map((payment, index) => (
-                <li key={index} className="bg-gray-100 rounded-md shadow-md p-4">
-                  <small className="block text-gray-700 font-bold">Sender: {payment.sender}</small>
-                  <small className="block text-gray-700 font-bold">Receiver: {payment.receiver}</small>
-                  <small className="block text-gray-700">Note: {payment.note}</small>
-                  <small className="block text-gray-500">Amount: {ethers.utils.formatEther(payment.amount)} ETH</small>
-                  <small className="block text-gray-500">Scheduled Time: {new Date(payment.scheduledTime * 1000).toLocaleString()}</small>
-                  <small className={`block ${payment.claimed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}`}>
-                    Status: {payment.claimed ? 'Claimed' : 'Pending'}
-                  </small>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </div>
-    </section>
-  </main>
+        {/* Claimable History Section */}
+        <section className="mb-8">
+          <h2 className="text-3xl font-semibold text-gray-100 mb-4 text-center">Claimable History</h2>
+          <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+            <div style={{ maxHeight: '40vh', overflowY: 'auto' }} className="rounded-md">
+              <ul className="space-y-2">
+                {receiverPayments.length === 0 ? (
+                  <li className="bg-gray-100 rounded-md shadow-md p-4">
+                    <p className="text-gray-600 text-center">No scheduled payments found.</p>
+                  </li>
+                ) : (
+                  receiverPayments.map((payment, index) => (
+                    <li key={index} className="bg-gray-100 rounded-md shadow-md p-4">
+                      <small className="block text-gray-700 font-bold">Sender: {payment.sender}</small>
+                      <small className="block text-gray-700 font-bold">Receiver: {payment.receiver}</small>
+                      <small className="block text-gray-700">Note: {payment.note}</small>
+                      <small className="block text-gray-500">Amount: {ethers.utils.formatEther(payment.amount)} ETH</small>
+                      <small className="block text-gray-500">Scheduled Time: {new Date(payment.scheduledTime * 1000).toLocaleString()}</small>
+                      <small className={`block ${payment.claimed ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}`}>
+                        Status: {payment.claimed ? 'Claimed' : 'Pending'}
+                      </small>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
 
-  <Toaster position="top-center" />
-  <Footer />
-</div>
-
+      <Toaster position="top-center" />
+      <Footer />
+    </div>
   );
 }

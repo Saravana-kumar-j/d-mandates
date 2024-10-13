@@ -4,25 +4,24 @@ import React from 'react';
 const About = ({ toggleLayout }) => {
   return (
     <div>
-  <h1 className="text-3xl font-bold text-center text-black mb-4">D-Mandates</h1>
-  
-  <p className="text-center text-gray-600 mb-6">
-    Welcome to D-Mandates! I'm a passionate blockchain developer dedicated to creating secure and efficient decentralized applications that empower users and reshape industries.
-  </p>
-  
-  <p className="text-center text-gray-600 mb-6">
-    D-Mandates aims to bridge the gap between traditional systems and blockchain technology, offering innovative solutions that enhance transparency, trust, and efficiency. Our platform is designed to facilitate decentralized governance, enabling users to make informed decisions while maintaining full control over their assets.
-  </p>
-  
-  <p className="text-center text-gray-600 mb-6">
-    With a strong focus on user experience, D-Mandates simplifies interactions with complex blockchain protocols. By leveraging smart contracts and decentralized finance (DeFi) principles, we aim to create a seamless and intuitive experience for all users, regardless of their technical background.
-  </p>
-  
-  <p className="text-center text-gray-600 mb-6">
-    Join us on this exciting journey as we explore the intersection of technology and finance. Together, we can harness the power of blockchain to create a more inclusive and equitable digital landscape. Welcome to the Web3 revolution!
-  </p>
-</div>
-
+      <h1 className="text-3xl font-bold text-center text-black mb-4">D-Mandates</h1>
+      
+      <p className="text-center text-gray-600 mb-6">
+        D-Mandates is a decentralized application (dApp) built on the Ethereum blockchain that empowers users to securely schedule future payments. With our platform, users can create transactions that are executed at a designated time, ensuring that payments are made reliably and efficiently.
+      </p>
+      
+      <p className="text-center text-gray-600 mb-6">
+        Our innovative smart contract, written in Solidity and deployed on the Ethereum network, guarantees the security and integrity of every transaction. D-Mandates enables recipients to claim their payments only after the scheduled time has passed, providing a structured approach to managing financial transactions.
+      </p>
+      
+      <h2 className="text-2xl font-bold text-center text-black mb-4">Features</h2>
+      <ul className="text-center text-gray-600 mb-6">
+        <li>🔹 <strong>Schedule Payments:</strong> Easily set up payments to any Ethereum address for a future date and time.</li>
+        <li>🔹 <strong>Claim Payments:</strong> Recipients can claim their scheduled payments once the specified time has arrived.</li>
+        <li>🔹 <strong>Track Payments:</strong> Users can effortlessly monitor their payments linked to their Ethereum addresses.</li>
+        <li>🔹 <strong>Event Logging:</strong> Our smart contract emits events for key actions, making it simple to trace payment transactions.</li>
+      </ul>
+    </div>
   );
 };
 
